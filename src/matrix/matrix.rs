@@ -12,21 +12,21 @@ pub mod util;
 // FIXME: This should also include Copy, Add and Mul, but it doesn't
 // due to bugs in Rust.
 pub trait Ring {
-    fn one() -> self;
-    fn zero() -> self;
+    fn one() -> Self;
+    fn zero() -> Self;
 }
 
-impl<T: num::Num> Ring for T {
+impl<T: num::IntConvertible> Ring for T {
     fn one() -> T { IntConvertible::from_int(1) }
     fn zero() -> T { IntConvertible::from_int(0) }
 }
 
 pub trait BasicMatrix<T: Copy> {
-    fn get(uint, uint) -> T;
-    fn set(uint, uint, T);
+    fn get(&self, uint, uint) -> T;
+    fn set(&self, uint, uint, T);
 
-    fn num_rows() -> uint;
-    fn num_cols() -> uint;
+    fn num_rows(&self) -> uint;
+    fn num_cols(&self) -> uint;
 }
 
 pub trait Create<T: Copy, M: BasicMatrix<T>> {
@@ -35,20 +35,20 @@ pub trait Create<T: Copy, M: BasicMatrix<T>> {
 
 pub trait Vector<T: Copy> : ops::Index<uint, T> {
     fn len(&self) -> uint;
-    fn get(uint) -> T;
-    fn set(uint, T);
+    fn get(&self, uint) -> T;
+    fn set(&self, uint, T);
 }
 
 // It's nice to be able to use arbitrary vector slices as Vectors.
-impl<T: Copy> Vector<T> for &mut [T] {
+impl<T: Copy> Vector<T> for &[T] {
     fn len(&self) -> uint { vec::len(*self) }
     #[inline(always)]
-    fn get(i: uint) -> T { self[i] }
+    fn get(&self, i: uint) -> T { self[i] }
     #[inline(always)]
-    fn set(i: uint, x: T) { self[i] = x }
+    fn set(&self, i: uint, x: T) { self[i] = x }
 }
 
-impl<T: Copy> ops::Index<uint, T> for &mut [T] {
+impl<T: Copy> ops::Index<uint, T> for &[T] {
     #[inline(always)]
     fn index(&self, i: uint) -> T { self[i] }
 }
@@ -57,9 +57,9 @@ impl<T: Copy> ops::Index<uint, T> for &mut [T] {
 impl<T: Copy> Vector<T> for ~T {
     fn len(&self) -> uint { vec::len(*self) }
     #[inline(always)]
-    fn get(i: uint) -> T { self[i] }
+    fn get(&self, i: uint) -> T { self[i] }
     #[inline(always)]
-    fn set(i: uint, x: T) { self[i] = x }
+    fn set(&self, i: uint, x: T) { self[i] = x }
 }
 
 impl<T: Copy> ops::Index<uint, T> for ~T {
@@ -76,9 +76,9 @@ struct RowVector<T: Copy, M: BasicMatrix<T>> {
 impl<T: Copy, M: BasicMatrix<T>> Vector<T> for RowVector<T, M> {
     fn len(&self) -> uint { self.base.num_cols() }
     #[inline(always)]
-    fn get(j: uint) -> T { self.base.get(self.i, j) }
+    fn get(&self, j: uint) -> T { self.base.get(self.i, j) }
     #[inline(always)]
-    fn set(j: uint, x: T) { self.base.set(self.i, j, x) }
+    fn set(&self, j: uint, x: T) { self.base.set(self.i, j, x) }
 }
 
 impl<T: Copy, M: BasicMatrix<T>> ops::Index<uint, T> for RowVector<T, M> {
@@ -94,9 +94,9 @@ struct ColumnVector<T: Copy, M: BasicMatrix<T>> {
 impl<T: Copy, M: BasicMatrix<T>> Vector<T> for ColumnVector<T, M> {
     fn len(&self) -> uint { self.base.num_rows() }
     #[inline(always)]
-    fn get(i: uint) -> T { self.base.get(i, self.j) }
+    fn get(&self, i: uint) -> T { self.base.get(i, self.j) }
     #[inline(always)]
-    fn set(i: uint, x: T) { self.base.set(i, self.j, x) }
+    fn set(&self, i: uint, x: T) { self.base.set(i, self.j, x) }
 }
 
 impl<T: Copy, M: BasicMatrix<T>> ops::Index<uint, T> for ColumnVector<T, M> {
@@ -126,7 +126,7 @@ pub struct Matrix<T: Copy> {     // was Matrix/&<T: Copy>
 
 impl<T: Copy> BasicMatrix<T> for Matrix<T> {
     #[inline(always)]
-    fn get(i: uint, j: uint) -> T {
+    fn get(&self, i: uint, j: uint) -> T {
         if i < self.num_rows() && j < self.num_cols() {
             self.data[i * self.num_cols() + j]
         }
@@ -138,7 +138,7 @@ impl<T: Copy> BasicMatrix<T> for Matrix<T> {
     }
 
     #[inline(always)]
-    fn set(i: uint, j: uint, x: T) {
+    fn set(&self, i: uint, j: uint, x: T) {
         if i < self.num_rows() && j < self.num_cols() {
             self.data[i * self.num_cols() + j] = x
         }
@@ -149,8 +149,8 @@ impl<T: Copy> BasicMatrix<T> for Matrix<T> {
         }
     }
 
-    fn num_rows() -> uint { self.rows }
-    fn num_cols() -> uint { self.cols }
+    fn num_rows(&self) -> uint { self.rows }
+    fn num_cols(&self) -> uint { self.cols }
 }
 
 impl<T: Copy> Matrix<T> for Create<T, Matrix<T>> {
@@ -160,7 +160,7 @@ impl<T: Copy> Matrix<T> for Create<T, Matrix<T>> {
         Matrix {
             rows: i,
             cols: j,
-            data: vec::to_mut(do vec::from_fn(i * j) |k| {
+            data: (do vec::from_fn(i * j) |k| {
                 let i = k / j;
                 let j = k % j;
                 init(i, j)
@@ -231,11 +231,11 @@ pub fn SubMatrix<T: Copy, M: BasicMatrix<T>>(m: &'a M,
 }
 
 impl<T: Copy, M: BasicMatrix<T>> BasicMatrix<T> for SubMatrix<T, M> {
-    fn num_rows() -> uint { self.rows }
-    fn num_cols() -> uint { self.cols }
+    fn num_rows(&self) -> uint { self.rows }
+    fn num_cols(&self) -> uint { self.cols }
 
     #[inline(always)]
-    fn get(i: uint, j: uint) -> T {
+    fn get(&self, i: uint, j: uint) -> T {
         if i < self.rows && j < self.cols {
             self.base.get(i + self.i, j + self.j)
         }
@@ -245,7 +245,7 @@ impl<T: Copy, M: BasicMatrix<T>> BasicMatrix<T> for SubMatrix<T, M> {
     }
 
     #[inline(always)]
-    fn set(i: uint, j: uint, x: T) {
+    fn set(&self, i: uint, j: uint, x: T) {
         if i < self.rows && j < self.cols {
             self.base.set(i + self.i, j + self.j, x)
         }
@@ -256,11 +256,11 @@ impl<T: Copy, M: BasicMatrix<T>> BasicMatrix<T> for SubMatrix<T, M> {
 }
 
 pub trait Sqrt {
-    fn sqrt() -> self;
+    fn sqrt(&self) -> Self;
 }
 
 impl Sqrt for float {
-    fn sqrt() -> float {
+    fn sqrt(&self) -> float {
         float::sqrt(self)
     }
 }
@@ -268,11 +268,11 @@ impl Sqrt for float {
 pub struct TransposeMatrix<T: Copy, M: BasicMatrix<T>>(&M);
 
 impl<T: Copy, M: BasicMatrix<T>> BasicMatrix<T> for TransposeMatrix<T, M> {
-    fn num_rows() -> uint { (*self).num_cols() }
-    fn num_cols() -> uint { (*self).num_rows() }
+    fn num_rows(&self) -> uint { (*self).num_cols() }
+    fn num_cols(&self) -> uint { (*self).num_rows() }
 
     #[inline(always)]
-    fn get(i: uint, j: uint) -> T { (*self).get(j, i) }
+    fn get(&self, i: uint, j: uint) -> T { (*self).get(j, i) }
     #[inline(always)]
-    fn set(i: uint, j: uint, x: T) { (*self).set(j, i, x) }
+    fn set(&self, i: uint, j: uint, x: T) { (*self).set(j, i, x) }
 }
