@@ -1,4 +1,5 @@
-use num::Num;
+// hack to update syntax
+use Num = core::num::IntConvertible;
 
 use matrix::{Create, BasicMatrix, SubMatrix, Sqrt, TransposeMatrix, Vector,
              row, col};
@@ -6,9 +7,9 @@ use matrix::generate::zero_matrix;
 
 pub mod par;
 
-pub fn dot<T: Copy Num, L: Vector<T>, R: Vector<T>>(lhs: &L, rhs: &R) -> T {
+pub fn dot<T: Copy + Num, L: Vector<T>, R: Vector<T>>(lhs: &L, rhs: &R) -> T {
     if lhs.len() != rhs.len() {
-        fail ~"Invalid vector lengths."
+        fail!(~"Invalid vector lengths.")
     }
 
     //error!("%? ### %?", lhs, rhs);
@@ -21,12 +22,12 @@ pub fn dot<T: Copy Num, L: Vector<T>, R: Vector<T>>(lhs: &L, rhs: &R) -> T {
     acc
 }
 
-pub fn mat_mul<T: Copy Num, LHS: BasicMatrix<T>, RHS: BasicMatrix<T>, Res: BasicMatrix<T> Create<T, Res>> (lhs: &LHS, rhs: &RHS) -> Res
+pub fn mat_mul<T: Copy + Num, LHS: BasicMatrix<T>, RHS: BasicMatrix<T>, Res: BasicMatrix<T> + Create<T, Res>> (lhs: &LHS, rhs: &RHS) -> Res
 {
     if lhs.num_cols() != rhs.num_rows() {
-        fail fmt!("Incompatible matrix sizes. LHS: %?, RHS: %?",
-                  (lhs.num_rows(), lhs.num_cols()),
-                  (rhs.num_rows(), rhs.num_cols()))
+        fail!( fmt!("Incompatible matrix sizes. LHS: %?, RHS: %?",
+                    (lhs.num_rows(), lhs.num_cols()),
+                    (rhs.num_rows(), rhs.num_cols())) )
     }
 
     //error!("Multiplying %? by %? -> %?",
@@ -40,9 +41,9 @@ pub fn mat_mul<T: Copy Num, LHS: BasicMatrix<T>, RHS: BasicMatrix<T>, Res: Basic
 }
 
 // M -> (A, B, C, D)
-fn subdivide<T: Copy Num, M: BasicMatrix<T>>(M: &a/M)
-    -> (SubMatrix/&a<T, M>, SubMatrix/&a<T, M>,
-        SubMatrix/&a<T, M>, SubMatrix/&a<T, M>)
+fn subdivide<T: Copy + Num, M: BasicMatrix<T>>(M: &'a M)
+    -> (&SubMatrix<'a, T, M>, &SubMatrix<'a, T, M>,
+        &SubMatrix<'a, T, M>, &SubMatrix<'a, T, M>)
 {
     let H = M.num_rows();
     let W = M.num_cols();
@@ -60,15 +61,15 @@ fn subdivide<T: Copy Num, M: BasicMatrix<T>>(M: &a/M)
     (A, B, C, D)
 }
 
-pub fn mat_mul_blocked<T: Copy Num, LHS: BasicMatrix<T>, RHS: BasicMatrix<T>, Res: BasicMatrix<T> Create<T, Res>> (lhs: &LHS, rhs: &RHS) -> Res
+pub fn mat_mul_blocked<T: Copy + Num, LHS: BasicMatrix<T>, RHS: BasicMatrix<T>, Res: BasicMatrix<T> + Create<T, Res>> (lhs: &LHS, rhs: &RHS) -> Res
 {
     if lhs.num_cols() != rhs.num_rows() {
-        fail fmt!("Incompatible matrix sizes. LHS: %?, RHS: %?",
-                  (lhs.num_rows(), lhs.num_cols()),
-                  (rhs.num_rows(), rhs.num_cols()))
+        fail!( fmt!("Incompatible matrix sizes. LHS: %?, RHS: %?",
+                   (lhs.num_rows(), lhs.num_cols()),
+                   (rhs.num_rows(), rhs.num_cols())) )
     }
 
-    const CUTOFF: uint = 32;
+    static CUTOFF: uint = 32;
     
     if     lhs.num_rows() <= CUTOFF
         || lhs.num_cols() <= CUTOFF
@@ -118,10 +119,10 @@ pub fn mat_mul_blocked<T: Copy Num, LHS: BasicMatrix<T>, RHS: BasicMatrix<T>, Re
     }
 }
 
-pub fn mat_add<T: Copy Num, LHS: BasicMatrix<T>, RHS: BasicMatrix<T>, Res: BasicMatrix<T> Create<T, Res>> (lhs: &LHS, rhs: &RHS) -> Res
+pub fn mat_add<T: Copy + Num, LHS: BasicMatrix<T>, RHS: BasicMatrix<T>, Res: BasicMatrix<T> + Create<T, Res>> (lhs: &LHS, rhs: &RHS) -> Res
 {
     if lhs.num_cols() != rhs.num_cols() || lhs.num_rows() != rhs.num_rows() {
-        fail ~"Incompatible matrix sizes"
+        fail!(~"Incompatible matrix sizes")
     }
 
     do Create::create::<T, Res, Res>(lhs.num_rows(), rhs.num_cols()) |i, j| {
@@ -129,12 +130,12 @@ pub fn mat_add<T: Copy Num, LHS: BasicMatrix<T>, RHS: BasicMatrix<T>, Res: Basic
     }
 }
 
-pub fn mat_sub<T: Copy Num, LHS: BasicMatrix<T>, RHS: BasicMatrix<T>, Res: BasicMatrix<T> Create<T, Res>> (lhs: &LHS, rhs: &RHS) -> Res
+pub fn mat_sub<T: Copy + Num, LHS: BasicMatrix<T>, RHS: BasicMatrix<T>, Res: BasicMatrix<T> + Create<T, Res>> (lhs: &LHS, rhs: &RHS) -> Res
 {
     if lhs.num_cols() != rhs.num_cols() || lhs.num_rows() != rhs.num_rows() {
-        fail fmt!("Incompatible matrix sizes. LHS: %?, RHS: %?",
-                  (lhs.num_rows(), lhs.num_cols()),
-                  (rhs.num_rows(), rhs.num_cols()))
+        fail!( fmt!("Incompatible matrix sizes. LHS: %?, RHS: %?",
+                    (lhs.num_rows(), lhs.num_cols()),
+                    (rhs.num_rows(), rhs.num_cols())) )
     }
 
     do Create::create::<T, Res, Res>(lhs.num_rows(), rhs.num_cols()) |i, j| {
@@ -142,18 +143,18 @@ pub fn mat_sub<T: Copy Num, LHS: BasicMatrix<T>, RHS: BasicMatrix<T>, Res: Basic
     }
 }
 
-pub fn mat_x_inplace<T: Copy Num, M: BasicMatrix<T>>(A: &M, x: T) {
+pub fn mat_x_inplace<T: Copy + Num, M: BasicMatrix<T>>(A: &M, x: T) {
     for_each(A, |_i, _j, y| x * y);
 }
 
-pub fn transpose<T: Copy, M: BasicMatrix<T>, R: BasicMatrix<T> Create<T, R>>(m: &M) -> R {
+pub fn transpose<T: Copy, M: BasicMatrix<T>, R: BasicMatrix<T> + Create<T, R>>(m: &M) -> R {
     do Create::create::<T, R, R>(m.num_cols(), m.num_rows()) |i, j| {
         m.get(j, i)
     }
 }
 
-pub fn cholesky_seq_inplace_raw<T: Copy Num Sqrt, M: BasicMatrix<float>>(A: &M, start: uint) {
-    assert A.num_rows() == A.num_cols();
+pub fn cholesky_seq_inplace_raw<T: Copy + Num + Sqrt, M: BasicMatrix<float>>(A: &M, start: uint) {
+    assert!( A.num_rows() == A.num_cols() );
     let N = A.num_rows();
     for uint::range(start, N) |k| {
         let Akk = A.get(k, k);
@@ -176,7 +177,7 @@ pub fn cholesky_seq_inplace_raw<T: Copy Num Sqrt, M: BasicMatrix<float>>(A: &M, 
     }
 }
 
-pub fn for_each<T: Copy, M: BasicMatrix<T>>(A: &M, f: fn(uint, uint, T) -> T) {
+pub fn for_each<T: Copy, M: BasicMatrix<T>>(A: &M, f: &fn(uint, uint, T) -> T) {
     for uint::range(0, A.num_rows()) |i| {
         for uint::range(0, A.num_cols()) |j| {
             A.set(i, j, f(i, j, A.get(i, j)))
@@ -184,11 +185,11 @@ pub fn for_each<T: Copy, M: BasicMatrix<T>>(A: &M, f: fn(uint, uint, T) -> T) {
     }
 }
 
-pub fn cholesky_seq_inplace<T: Copy Num Sqrt, M: BasicMatrix<float>>(A: &M) {
+pub fn cholesky_seq_inplace<T: Copy + Num + Sqrt, M: BasicMatrix<float>>(A: &M) {
     cholesky_seq_inplace_start::<T, M>(A, 0);
 }
 
-pub fn cholesky_seq_inplace_start<T: Copy Num Sqrt, M: BasicMatrix<float>>(A: &M,
+pub fn cholesky_seq_inplace_start<T: Copy + Num + Sqrt, M: BasicMatrix<float>>(A: &M,
                                                                  start: uint) {
     cholesky_seq_inplace_raw::<T, M>(A, start);
 
@@ -200,8 +201,8 @@ pub fn cholesky_seq_inplace_start<T: Copy Num Sqrt, M: BasicMatrix<float>>(A: &M
 }
 
 
-pub fn concat_rows<T: Copy, LHS: BasicMatrix<T>, RHS: BasicMatrix<T>, R: BasicMatrix<T> Create<T, R>>(A: &LHS, B: &RHS) -> R {
-    assert A.num_cols() == B.num_cols();
+pub fn concat_rows<T: Copy, LHS: BasicMatrix<T>, RHS: BasicMatrix<T>, R: BasicMatrix<T> + Create<T, R>>(A: &LHS, B: &RHS) -> R {
+    assert!( A.num_cols() == B.num_cols() );
 
     let N = A.num_rows();
 
@@ -215,12 +216,12 @@ pub fn concat_rows<T: Copy, LHS: BasicMatrix<T>, RHS: BasicMatrix<T>, R: BasicMa
     }
 }
 
-pub fn concat_cols<T: Copy, LHS: BasicMatrix<T>, RHS: BasicMatrix<T>, R: BasicMatrix<T> Create<T, R>>(A: &LHS, B: &RHS) -> R {
+pub fn concat_cols<T: Copy, LHS: BasicMatrix<T>, RHS: BasicMatrix<T>, R: BasicMatrix<T> + Create<T, R>>(A: &LHS, B: &RHS) -> R {
     //error!("concat: %?, %?",
     //       (A.num_rows(), A.num_cols()),
     //       (B.num_rows(), B.num_cols()));
            
-    assert A.num_rows() == B.num_rows();
+    assert!( A.num_rows() == B.num_rows() );
 
     let N = A.num_cols();
 
@@ -234,11 +235,11 @@ pub fn concat_cols<T: Copy, LHS: BasicMatrix<T>, RHS: BasicMatrix<T>, R: BasicMa
     }
 }
 
-pub fn convert<T: Copy, M: BasicMatrix<T>, R: BasicMatrix<T> Create<T, R>>(M: &M) -> R {
+pub fn convert<T: Copy, M: BasicMatrix<T>, R: BasicMatrix<T> + Create<T, R>>(M: &M) -> R {
     Create::create::<T, R, R>(M.num_rows(), M.num_cols(), |i, j| M.get(i, j))
 }
 
-pub fn inverse<T: Copy Num, M: BasicMatrix<T>, R: BasicMatrix<T> Create<T, R>>(M: &M) -> R {
+pub fn inverse<T: Copy + Num, M: BasicMatrix<T>, R: BasicMatrix<T> + Create<T, R>>(M: &M) -> R {
     // This basically does the blockwise inversion algorithm on the
     // Wikipedia page [1]. It's not a very efficient implementation,
     // since it ends up doing an absurd number of copies. It also
@@ -247,7 +248,7 @@ pub fn inverse<T: Copy Num, M: BasicMatrix<T>, R: BasicMatrix<T> Create<T, R>>(M
     //
     // [1] http://en.wikipedia.org/wiki/Invertible_matrix#Blockwise_inversion
 
-    assert M.num_rows() == M.num_cols();
+    assert!( M.num_rows() == M.num_cols() );
 
     let N = M.num_rows();
 
@@ -315,7 +316,7 @@ pub fn inverse<T: Copy Num, M: BasicMatrix<T>, R: BasicMatrix<T> Create<T, R>>(M
     }
 }
 
-pub fn cholesky_blocked<M: BasicMatrix<float>, R: BasicMatrix<float> Create<float, R>>(M: &M) -> R {
+pub fn cholesky_blocked<M: BasicMatrix<float>, R: BasicMatrix<float> + Create<float, R>>(M: &M) -> R {
     /*
     A recursive blocked Cholesky factorization.
 
@@ -338,15 +339,15 @@ pub fn cholesky_blocked<M: BasicMatrix<float>, R: BasicMatrix<float> Create<floa
 
     */
 
-    assert M.num_rows() == M.num_cols();
+    assert!( M.num_rows() == M.num_cols() );
     let N = M.num_rows();
 
-    const BLOCK_SIZE: uint = 1;
+    static BLOCK_SIZE: uint = 1;
 
     if N <= BLOCK_SIZE {
         let M = convert(M);
         cholesky_seq_inplace::<float, R>(&M);
-        move M
+        M
     }
     else {
         let N2 = N / 2;

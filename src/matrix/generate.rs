@@ -1,8 +1,8 @@
-use num::Num;
+//use core::num::Num;
 
 use matrix::{BasicMatrix, Create, Matrix, Ring};
 
-pub fn identity<T: Copy Ring, M: BasicMatrix<T> Create<T, M>>(N: uint)
+pub fn identity<T: Copy + Ring, M: BasicMatrix<T> + Create<T, M>>(N: uint)
     -> M
 {
     // Why does create have three type parameters?
@@ -32,7 +32,7 @@ pub fn rand_L1(N: uint) -> Matrix<float> {
     }
 }
 
-pub fn zero_matrix<T: Copy Ring, M: BasicMatrix<T> Create<T, M>>(n: uint, m: uint) -> M
+pub fn zero_matrix<T: Copy + Ring, M: BasicMatrix<T> + Create<T, M>>(n: uint, m: uint) -> M
 {
     Create::create::<T, M, M>(n, m, |_i, _j| Ring::zero::<T>())
 }

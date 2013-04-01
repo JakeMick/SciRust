@@ -1,6 +1,7 @@
 extern mod std;
 
-use num::Num;
+// hack to update syntax
+use Num = core::num::IntConvertible;
 
 use std::future::spawn;
 
@@ -11,18 +12,18 @@ use matrix::algorithms::{concat_rows, concat_cols, dot, convert, mat_sub,
 use matrix::generate::{zero_matrix};
 
 // A parallel matrix creator.
-pub fn create<T: Copy Owned, M: Owned Copy BasicMatrix<T> Create<T, M>>(rows: uint, cols: uint, f: fn~(uint, uint) -> T) -> M {
+pub fn create<T: Copy + Owned, M: Owned + Copy + BasicMatrix<T> + Create<T, M>>(rows: uint, cols: uint, f: ~fn(uint, uint) -> T) -> M {
     // by default, use 128x128 as a block size. We should use
     // autotuning to determine the best option.
 
-    create_blocked(rows, cols, 128, move f)
+    create_blocked(rows, cols, 128, f)
 }
 
 fn min<T: cmp::Ord>(a: T, b: T) -> T {
-    if a < b { move a } else { move b }
+    if a < b { a } else { b }
 }
 
-pub fn create_blocked<T: Copy Owned, M: Owned Copy BasicMatrix<T> Create<T, M>>(rows: uint, cols: uint, block_size: uint, f: fn~(uint, uint) -> T) -> M {
+pub fn create_blocked<T: Copy + Owned, M: Owned + Copy + BasicMatrix<T> + Create<T, M>>(rows: uint, cols: uint, block_size: uint, f: ~fn(uint, uint) -> T) -> M {
     
     let mut blocks = ~[];
 
@@ -45,11 +46,11 @@ pub fn create_blocked<T: Copy Owned, M: Owned Copy BasicMatrix<T> Create<T, M>>(
                 }
             };
 
-            row.push(move fu);
+            row.push(fu);
             j += block_size;
         }
         
-        blocks.push(move row);
+        blocks.push(row);
         i += block_size;
     }
     
@@ -72,12 +73,12 @@ pub fn create_blocked<T: Copy Owned, M: Owned Copy BasicMatrix<T> Create<T, M>>(
     M
 }
 
-pub fn mat_mul<T: Owned Copy Num, LHS: BasicMatrix<T>, RHS: BasicMatrix<T>, Res: Owned Copy BasicMatrix<T> Create<T, Res>> (lhs: &LHS, rhs: &RHS) -> Res
+pub fn mat_mul<T: Owned + Copy + Num, LHS: BasicMatrix<T>, RHS: BasicMatrix<T>, Res: Owned + Copy + BasicMatrix<T> + Create<T, Res>> (lhs: &LHS, rhs: &RHS) -> Res
 {
     if lhs.num_cols() != rhs.num_rows() {
-        fail fmt!("Incompatible matrix sizes. LHS: %?, RHS: %?",
+        fail!(fmt!("Incompatible matrix sizes. LHS: %?, RHS: %?",
                   (lhs.num_rows(), lhs.num_cols()),
-                  (rhs.num_rows(), rhs.num_cols()))
+                  (rhs.num_rows(), rhs.num_cols())))
     }
 
     //error!("Multiplying %? by %? -> %?",
@@ -91,7 +92,7 @@ pub fn mat_mul<T: Owned Copy Num, LHS: BasicMatrix<T>, RHS: BasicMatrix<T>, Res:
         let num_cols = rhs.num_cols();
         let lhs = ptr::addr_of(lhs);
         let rhs = ptr::addr_of(rhs);
-        let M = do create::<T, Res>(num_rows, num_cols) |i, j| unsafe {
+        let M = do create::<T, Res>(num_rows, num_cols) |i, j| {
             let lhs: &LHS = &*lhs;
             let rhs: &RHS = &*rhs;
             dot(&row(lhs, i), &col(rhs, j))
@@ -102,7 +103,7 @@ pub fn mat_mul<T: Owned Copy Num, LHS: BasicMatrix<T>, RHS: BasicMatrix<T>, Res:
     }
 }
 
-pub fn inverse<T: Copy Owned Num, M: Owned BasicMatrix<T>, R: Copy Owned BasicMatrix<T> Create<T, R>>(M: &M) -> R {
+pub fn inverse<T: Copy + Owned + Num, M: Owned + BasicMatrix<T>, R: Copy + Owned + BasicMatrix<T> + Create<T, R>>(M: &M) -> R {
     // This basically does the blockwise inversion algorithm on the
     // Wikipedia page [1]. It's not a very efficient implementation,
     // since it ends up doing an absurd number of copies. It also
@@ -111,7 +112,7 @@ pub fn inverse<T: Copy Owned Num, M: Owned BasicMatrix<T>, R: Copy Owned BasicMa
     //
     // [1] http://en.wikipedia.org/wiki/Invertible_matrix#Blockwise_inversion
 
-    assert M.num_rows() == M.num_cols();
+    assert!(M.num_rows() == M.num_cols());
 
     let N = M.num_rows();
 
@@ -179,7 +180,7 @@ pub fn inverse<T: Copy Owned Num, M: Owned BasicMatrix<T>, R: Copy Owned BasicMa
     }
 }
 
-pub fn cholesky_blocked<M: Owned Copy BasicMatrix<float>, R: Owned Copy BasicMatrix<float> Create<float, R>>(M: &M) -> R {
+pub fn cholesky_blocked<M: Owned + Copy + BasicMatrix<float>, R: Owned + Copy + BasicMatrix<float> + Create<float, R>>(M: &M) -> R {
     /*
     A recursive blocked Cholesky factorization.
 
@@ -202,15 +203,15 @@ pub fn cholesky_blocked<M: Owned Copy BasicMatrix<float>, R: Owned Copy BasicMat
 
     */
 
-    assert M.num_rows() == M.num_cols();
+    assert!(M.num_rows() == M.num_cols());
     let N = M.num_rows();
 
-    const BLOCK_SIZE: uint = 1;
+    static BLOCK_SIZE: uint = 1;
 
     if N <= BLOCK_SIZE {
         let M = convert(M);
         cholesky_seq_inplace::<float, R>(&M);
-        move M
+        M
     }
     else {
         let N2 = N / 2;
