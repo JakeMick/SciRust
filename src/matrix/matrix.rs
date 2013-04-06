@@ -16,7 +16,7 @@ pub trait Ring {
     fn zero() -> Self;
 }
 
-impl<T: num::IntConvertible> Ring for T {
+impl<T: IntConvertible> Ring for T {
     fn one() -> T { IntConvertible::from_int(1) }
     fn zero() -> T { IntConvertible::from_int(0) }
 }
@@ -169,11 +169,14 @@ impl<T: Copy> Matrix<T> for Create<T, Matrix<T>> {
     }
 }
 
-struct SubMatrix<T: Copy, M: BasicMatrix<T>> {
-    i: uint, j: uint,
-    rows: uint, cols: uint,
-    base: &M
-}
+// ***** commented out for update
+//
+// struct SubMatrix<T: Copy, M: BasicMatrix<T>> {
+//     i: uint, j: uint,
+//     rows: uint, cols: uint,
+//     base: &M
+// }
+
 
 /* // This is some type voodoo that might be nice later.
 
@@ -218,42 +221,44 @@ fn SubMatrix<T: Copy, M: BasicMatrix<T> RefineSubMatrix<T, M>>(m: &a/M,
 }
 */
 
-pub fn SubMatrix<T: Copy, M: BasicMatrix<T>>(m: &'a M,
-                                         i: uint,
-                                         j: uint,
-                                         rows: uint,
-                                         cols: uint)
-    -> &SubMatrix<'a, T, M>
-{
-    SubMatrix {
-        i: i, j: j, rows: rows, cols: cols, base: m
-    }        
-}
+// ***** commented out for update
+//
+// pub fn SubMatrix<T: Copy, M: BasicMatrix<T>>(m: &'a M,
+//                                          i: uint,
+//                                          j: uint,
+//                                          rows: uint,
+//                                          cols: uint)
+//     -> &SubMatrix<'a, T, M>
+// {
+//     SubMatrix {
+//         i: i, j: j, rows: rows, cols: cols, base: m
+//     }        
+// }
 
-impl<T: Copy, M: BasicMatrix<T>> BasicMatrix<T> for SubMatrix<T, M> {
-    fn num_rows(&self) -> uint { self.rows }
-    fn num_cols(&self) -> uint { self.cols }
+// impl<T: Copy, M: BasicMatrix<T>> BasicMatrix<T> for SubMatrix<T, M> {
+//     fn num_rows(&self) -> uint { self.rows }
+//     fn num_cols(&self) -> uint { self.cols }
 
-    #[inline(always)]
-    fn get(&self, i: uint, j: uint) -> T {
-        if i < self.rows && j < self.cols {
-            self.base.get(i + self.i, j + self.j)
-        }
-        else {
-            fail!(~"SubMatrix index out of bounds.")
-        }
-    }
+//     #[inline(always)]
+//     fn get(&self, i: uint, j: uint) -> T {
+//         if i < self.rows && j < self.cols {
+//             self.base.get(i + self.i, j + self.j)
+//         }
+//         else {
+//             fail!(~"SubMatrix index out of bounds.")
+//         }
+//     }
 
-    #[inline(always)]
-    fn set(&self, i: uint, j: uint, x: T) {
-        if i < self.rows && j < self.cols {
-            self.base.set(i + self.i, j + self.j, x)
-        }
-        else {
-            fail!(~"SubMatrix index out of bounds.")
-        }
-    }
-}
+//     #[inline(always)]
+//     fn set(&self, i: uint, j: uint, x: T) {
+//         if i < self.rows && j < self.cols {
+//             self.base.set(i + self.i, j + self.j, x)
+//         }
+//         else {
+//             fail!(~"SubMatrix index out of bounds.")
+//         }
+//     }
+// }
 
 pub trait Sqrt {
     fn sqrt(&self) -> Self;
